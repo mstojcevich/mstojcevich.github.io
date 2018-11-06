@@ -119,22 +119,24 @@ Because using unions for type punning is undefined behavior in C++ (it&rsquo;s a
 
 <p>To explain type punning using unions, I will use the following example:</p>
 
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-D" data-lang="D">union PunnedRegister {
-    short ab; // Grouped 8-bit values
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><code class="language-D" data-lang="D"><span></span><span style="color: #66d9ef">union</span> <span style="color: #f8f8f2">PunnedRegister</span> <span style="color: #f8f8f2">{</span>
+    <span style="color: #66d9ef">short</span> <span style="color: #f8f8f2">ab;</span> <span style="color: #75715e">// Grouped 8-bit values</span>
 
-    struct { // In order of least significant to most significant
-        byte b; // Right value
-        byte a; // Left value
-    }
-}
+    <span style="color: #66d9ef">struct</span> <span style="color: #f8f8f2">{</span> <span style="color: #75715e">// In order of least significant to most significant</span>
+        <span style="color: #66d9ef">byte</span> <span style="color: #f8f8f2">b;</span> <span style="color: #75715e">// Right value</span>
+        <span style="color: #66d9ef">byte</span> <span style="color: #f8f8f2">a;</span> <span style="color: #75715e">// Left value</span>
+    <span style="color: #f8f8f2">}</span>
+<span style="color: #f8f8f2">}</span>
 
-void main() {
-    PunnedRegister r;
+<span style="color: #66d9ef">void</span> <span style="color: #f8f8f2">main()</span> <span style="color: #f8f8f2">{</span>
+    <span style="color: #f8f8f2">PunnedRegister</span> <span style="color: #f8f8f2">r;</span>
 
-    r.a = 0xA;
-    r.b = 0xB;
-    writefln(&#34;%04X&#34;, r.ab);
-}</code></pre></div>
+    <span style="color: #f8f8f2">r.a</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0xA</span><span style="color: #f8f8f2">;</span>
+    <span style="color: #f8f8f2">r.b</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0xB</span><span style="color: #f8f8f2">;</span>
+    <span style="color: #f8f8f2">writefln(</span><span style="color: #e6db74">&quot;%04X&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #f8f8f2">r.ab);</span>
+<span style="color: #f8f8f2">}</span>
+</code></pre></div>
+
 
 <p>This code outputs <code>0A0B</code> as expected.</p>
 
@@ -145,32 +147,34 @@ When accessed as one of the two 8-bit integers, either the left or right half of
 
 <p>Using mixins to reduce the amount of repetitive code, this is how the registers will be represented in the emulator:</p>
 
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-D" data-lang="D">alias reg16 = short;
-alias reg8 = byte;
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><code class="language-D" data-lang="D"><span></span><span style="color: #66d9ef">alias</span> <span style="color: #f8f8f2">reg16</span> <span style="color: #f8f8f2">=</span> <span style="color: #66d9ef">short</span><span style="color: #f8f8f2">;</span>
+<span style="color: #66d9ef">alias</span> <span style="color: #f8f8f2">reg8</span> <span style="color: #f8f8f2">=</span> <span style="color: #66d9ef">byte</span><span style="color: #f8f8f2">;</span>
 
-template Register(string firstHalf, string secondHalf) {
-    const char[] Register = 
-    &#34;
-    union {
-        reg16 &#34; ~ firstHalf ~ secondHalf ~ &#34;;
+<span style="color: #66d9ef">template</span> <span style="color: #f8f8f2">Register(string</span> <span style="color: #f8f8f2">firstHalf,</span> <span style="color: #f8f8f2">string</span> <span style="color: #f8f8f2">secondHalf)</span> <span style="color: #f8f8f2">{</span>
+    <span style="color: #66d9ef">const</span> <span style="color: #66d9ef">char</span><span style="color: #f8f8f2">[]</span> <span style="color: #f8f8f2">Register</span> <span style="color: #f8f8f2">=</span> 
+    <span style="color: #e6db74">&quot;</span>
+<span style="color: #e6db74">    union {</span>
+<span style="color: #e6db74">        reg16 &quot;</span> <span style="color: #f8f8f2">~</span> <span style="color: #f8f8f2">firstHalf</span> <span style="color: #f8f8f2">~</span> <span style="color: #f8f8f2">secondHalf</span> <span style="color: #f8f8f2">~</span> <span style="color: #e6db74">&quot;;</span>
 
-        struct {
-            reg8 &#34; ~ secondHalf ~ &#34;;
-            reg8 &#34; ~ firstHalf ~&#34;;
-        }
-    }
-    &#34;;
-}
+<span style="color: #e6db74">        struct {</span>
+<span style="color: #e6db74">            reg8 &quot;</span> <span style="color: #f8f8f2">~</span> <span style="color: #f8f8f2">secondHalf</span> <span style="color: #f8f8f2">~</span> <span style="color: #e6db74">&quot;;</span>
+<span style="color: #e6db74">            reg8 &quot;</span> <span style="color: #f8f8f2">~</span> <span style="color: #f8f8f2">firstHalf</span> <span style="color: #f8f8f2">~</span><span style="color: #e6db74">&quot;;</span>
+<span style="color: #e6db74">        }</span>
+<span style="color: #e6db74">    }</span>
+<span style="color: #e6db74">    &quot;</span><span style="color: #f8f8f2">;</span>
+<span style="color: #f8f8f2">}</span>
 
-struct Registers {
-    mixin(Register!(&#34;a&#34;, &#34;f&#34;));
-    mixin(Register!(&#34;b&#34;, &#34;c&#34;));
-    mixin(Register!(&#34;d&#34;, &#34;e&#34;));
-    mixin(Register!(&#34;h&#34;, &#34;l&#34;));
+<span style="color: #66d9ef">struct</span> <span style="color: #f8f8f2">Registers</span> <span style="color: #f8f8f2">{</span>
+    <span style="color: #66d9ef">mixin</span><span style="color: #f8f8f2">(Register!(</span><span style="color: #e6db74">&quot;a&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;f&quot;</span><span style="color: #f8f8f2">));</span>
+    <span style="color: #66d9ef">mixin</span><span style="color: #f8f8f2">(Register!(</span><span style="color: #e6db74">&quot;b&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;c&quot;</span><span style="color: #f8f8f2">));</span>
+    <span style="color: #66d9ef">mixin</span><span style="color: #f8f8f2">(Register!(</span><span style="color: #e6db74">&quot;d&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;e&quot;</span><span style="color: #f8f8f2">));</span>
+    <span style="color: #66d9ef">mixin</span><span style="color: #f8f8f2">(Register!(</span><span style="color: #e6db74">&quot;h&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;l&quot;</span><span style="color: #f8f8f2">));</span>
 
-    reg16 sp;
-    reg16 pc;
-}</code></pre></div>
+    <span style="color: #f8f8f2">reg16</span> <span style="color: #f8f8f2">sp;</span>
+    <span style="color: #f8f8f2">reg16</span> <span style="color: #f8f8f2">pc;</span>
+<span style="color: #f8f8f2">}</span>
+</code></pre></div>
+
 
 <p>I also aliased short to reg16 and byte to reg8 in case I find it important to make them unsigned in the future or alter how they are stored in some other way. Unlike C/C++, it isn&rsquo;t necessary to change the alias on different platforms since type size is <a href="https://dlang.org/spec/type.html">guarenteed</a>.</p>
 
@@ -225,13 +229,15 @@ struct Registers {
 
 <p>While most games probably don&rsquo;t care about what the initial values of the registers are, I wanted to implement the values anyway for completion sake.
 I set these values after declaring the registers:
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-D" data-lang="D">// Initialize like the original bootstrap rom
-regs.sp = 0xFFFE;
-regs.af = 0x01B0;
-regs.bc = 0x0013;
-regs.de = 0x00D8;
-regs.hl = 0x014D;
-regs.pc = 0x0100;</code></pre></div></p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><code class="language-D" data-lang="D"><span></span><span style="color: #75715e">// Initialize like the original bootstrap rom</span>
+<span style="color: #f8f8f2">regs.sp</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0xFFFE</span><span style="color: #f8f8f2">;</span>
+<span style="color: #f8f8f2">regs.af</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0x01B0</span><span style="color: #f8f8f2">;</span>
+<span style="color: #f8f8f2">regs.bc</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0x0013</span><span style="color: #f8f8f2">;</span>
+<span style="color: #f8f8f2">regs.de</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0x00D8</span><span style="color: #f8f8f2">;</span>
+<span style="color: #f8f8f2">regs.hl</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0x014D</span><span style="color: #f8f8f2">;</span>
+<span style="color: #f8f8f2">regs.pc</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0x0100</span><span style="color: #f8f8f2">;</span>
+</code></pre></div>
+</p>
 
 <p>I&rsquo;ll look into the effects of the bootstrap rom on memory later.</p>
 

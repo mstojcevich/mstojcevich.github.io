@@ -102,86 +102,84 @@ An overview of emulation timing In the hardware of game systems such as the Game
 <p>Fibers (similar to coroutines, goroutines, deferreds, etc.) are typically used as a way to abstract concurrent computing through &ldquo;cooperative multitasking&rdquo;. As opposed to having the operating system switch the current thread after a certain amount of time, fibers will typically indicate that they&rsquo;re ready to be switched away by <code>yield</code>ing execution to another fiber. Fibers can be implemented entirely in userspace by sharing a single OS thread or be split up to run in parallel. These are super useful when trying to have a lightweight non-blocking single threaded application; as a result, fibers are a common concept applied in server frameworks such as Twisted, Node.js, and Golang.</p>
 
 <p>The D programming language implements first-class support for fibers. Many languages which provide support for fibers or coroutines (such as Go) will include a built-in fiber scheduler which will provide an intelligent mapping between fibers and OS threads, allowing for parallelism. Interestingly, D doesn&rsquo;t constrain us to a specific built-in fiber scheduler. In D, a program is able to call fibers directly, and check their status once they yield. Here&rsquo;s an example adapted from <a href="https://dlang.org/phobos/core_thread.html#.Fiber">D&rsquo;s excellent language documentation</a>:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><code class="language-d" data-lang="d"><span></span><span style="color: #66d9ef">void</span> <span style="color: #f8f8f2">fiberFunc()</span>
+<span style="color: #f8f8f2">{</span>
+    <span style="color: #f8f8f2">counter</span> <span style="color: #f8f8f2">+=</span> <span style="color: #ae81ff">4</span><span style="color: #f8f8f2">;</span>
+    <span style="color: #f8f8f2">Fiber.yield();</span>
+    <span style="color: #f8f8f2">counter</span> <span style="color: #f8f8f2">+=</span> <span style="color: #ae81ff">8</span><span style="color: #f8f8f2">;</span>
+<span style="color: #f8f8f2">}</span>
 
-<pre><code class="language-D">void fiberFunc()
-{
-    counter += 4;
-    Fiber.yield();
-    counter += 8;
-}
+<span style="color: #66d9ef">void</span> <span style="color: #f8f8f2">fiberFunc2()</span> <span style="color: #f8f8f2">{</span>
+    <span style="color: #f8f8f2">counter</span> <span style="color: #f8f8f2">+=</span> <span style="color: #ae81ff">2</span><span style="color: #f8f8f2">;</span>
+<span style="color: #f8f8f2">}</span>
 
-void fiberFunc2() {
-    counter += 2;
-}
+<span style="color: #75715e">// create instances of each type</span>
+<span style="color: #f8f8f2">Fiber</span> <span style="color: #f8f8f2">fiber1</span> <span style="color: #f8f8f2">=</span> <span style="color: #66d9ef">new</span> <span style="color: #f8f8f2">Fiber(</span> <span style="color: #f8f8f2">&amp;fiberFunc</span> <span style="color: #f8f8f2">);</span>
+<span style="color: #f8f8f2">Fiber</span> <span style="color: #f8f8f2">fiber2</span> <span style="color: #f8f8f2">=</span> <span style="color: #66d9ef">new</span> <span style="color: #f8f8f2">Fiber(</span> <span style="color: #f8f8f2">&amp;fiberFunc2</span> <span style="color: #f8f8f2">);</span>
 
-// create instances of each type
-Fiber fiber1 = new Fiber( &amp;fiberFunc );
-Fiber fiber2 = new Fiber( &amp;fiberFunc2 );
+<span style="color: #66d9ef">assert</span><span style="color: #f8f8f2">(</span> <span style="color: #f8f8f2">counter</span> <span style="color: #f8f8f2">==</span> <span style="color: #ae81ff">0</span> <span style="color: #f8f8f2">);</span>
 
-assert( counter == 0 );
+<span style="color: #f8f8f2">fiber2.call();</span> <span style="color: #75715e">// Should add 2</span>
+<span style="color: #66d9ef">assert</span><span style="color: #f8f8f2">(</span> <span style="color: #f8f8f2">counter</span> <span style="color: #f8f8f2">==</span> <span style="color: #ae81ff">2</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;Derived fiber increment.&quot;</span> <span style="color: #f8f8f2">);</span>
 
-fiber2.call(); // Should add 2
-assert( counter == 2, &quot;Derived fiber increment.&quot; );
+<span style="color: #f8f8f2">fiber1.call();</span> <span style="color: #75715e">// Should add 4 first</span>
+<span style="color: #66d9ef">assert</span><span style="color: #f8f8f2">(</span> <span style="color: #f8f8f2">counter</span> <span style="color: #f8f8f2">==</span> <span style="color: #ae81ff">6</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;First composed fiber increment.&quot;</span> <span style="color: #f8f8f2">);</span>
 
-fiber1.call(); // Should add 4 first
-assert( counter == 6, &quot;First composed fiber increment.&quot; );
+<span style="color: #f8f8f2">counter</span> <span style="color: #f8f8f2">+=</span> <span style="color: #ae81ff">16</span><span style="color: #f8f8f2">;</span>
+<span style="color: #66d9ef">assert</span><span style="color: #f8f8f2">(</span> <span style="color: #f8f8f2">counter</span> <span style="color: #f8f8f2">==</span> <span style="color: #ae81ff">22</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;Calling context increment.&quot;</span> <span style="color: #f8f8f2">);</span>
 
-counter += 16;
-assert( counter == 22, &quot;Calling context increment.&quot; );
+<span style="color: #f8f8f2">fiber1.call();</span> <span style="color: #75715e">// Should add 8 now</span>
+<span style="color: #66d9ef">assert</span><span style="color: #f8f8f2">(</span> <span style="color: #f8f8f2">counter</span> <span style="color: #f8f8f2">==</span> <span style="color: #ae81ff">30</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;Second composed fiber increment.&quot;</span> <span style="color: #f8f8f2">);</span>
 
-fiber1.call(); // Should add 8 now
-assert( counter == 30, &quot;Second composed fiber increment.&quot; );
-
-// since each fiber has run to completion, each should have state TERM
-assert( fiber1.state == Fiber.State.TERM );
-assert( fiber2.state == Fiber.State.TERM );
-</code></pre>
+<span style="color: #75715e">// since each fiber has run to completion, each should have state TERM</span>
+<span style="color: #66d9ef">assert</span><span style="color: #f8f8f2">(</span> <span style="color: #f8f8f2">fiber1.state</span> <span style="color: #f8f8f2">==</span> <span style="color: #f8f8f2">Fiber.State.TERM</span> <span style="color: #f8f8f2">);</span>
+<span style="color: #66d9ef">assert</span><span style="color: #f8f8f2">(</span> <span style="color: #f8f8f2">fiber2.state</span> <span style="color: #f8f8f2">==</span> <span style="color: #f8f8f2">Fiber.State.TERM</span> <span style="color: #f8f8f2">);</span>
+</code></pre></div>
 
 <p>We&rsquo;re going to abuse D&rsquo;s fiber support by providing a non-parallel entirely-fair implementation of fiber scheduling, which will simulate the behavior we desire for hardware component timing. We will transform D&rsquo;s fibers into something closer to what is typically referred to as a coroutine, essentially a fiber without complex scheduling or parallelism.</p>
 
 <h2 id="our-fiber-scheduler">Our fiber scheduler</h2>
 
 <p>As mentioned above, we want to implement a fiber scheduler that properly interleaves execution of different hardware components; thankfully, D makes this incredibly easy. Eventually we may want to have this scheduler implementation serve as an arbiter for cross-component communication and ensure that data is only written on the falling clock edge, but for now this is sufficient.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><code class="language-D" data-lang="D"><span></span><span style="color: #75715e">// Do similar implementation for CPU</span>
+<span style="color: #66d9ef">class</span> <span style="color: #f8f8f2">PPU</span> <span style="color: #f8f8f2">extends</span> <span style="color: #f8f8f2">Fiber</span> <span style="color: #f8f8f2">{</span>
+    <span style="color: #66d9ef">this</span><span style="color: #f8f8f2">()</span>
+    <span style="color: #f8f8f2">{</span>
+        <span style="color: #66d9ef">super</span><span style="color: #f8f8f2">(</span> <span style="color: #f8f8f2">&amp;run</span> <span style="color: #f8f8f2">);</span>
+    <span style="color: #f8f8f2">}</span>
 
-<pre><code class="language-D">// Do similar implementation for CPU
-class PPU extends Fiber {
-    this()
-    {
-        super( &amp;run );
-    }
+<span style="color: #66d9ef">private</span> <span style="color: #f8f8f2">:</span>
+    <span style="color: #66d9ef">void</span> <span style="color: #f8f8f2">run()</span>
+    <span style="color: #f8f8f2">{</span>
+        <span style="color: #66d9ef">while</span> <span style="color: #f8f8f2">(</span><span style="color: #66d9ef">true</span><span style="color: #f8f8f2">)</span> <span style="color: #f8f8f2">{</span>
+            <span style="color: #75715e">// do stuff that would take one cycle</span>
+            <span style="color: #f8f8f2">Fiber.yield();</span>
+            <span style="color: #75715e">// do more stuff that would take another cycle</span>
+            <span style="color: #f8f8f2">Fiber.yield();</span>
+            <span style="color: #75715e">// ...</span>
+            <span style="color: #f8f8f2">Fiber.yield();</span>
+        <span style="color: #f8f8f2">}</span>
+    <span style="color: #f8f8f2">}</span>
+<span style="color: #f8f8f2">}</span>
 
-private :
-    void run()
-    {
-        while (true) {
-            // do stuff that would take one cycle
-            Fiber.yield();
-            // do more stuff that would take another cycle
-            Fiber.yield();
-            // ...
-            Fiber.yield();
-        }
-    }
-}
+<span style="color: #66d9ef">class</span> <span style="color: #f8f8f2">ComponentScheduler</span> <span style="color: #f8f8f2">{</span>
 
-class ComponentScheduler {
+    <span style="color: #66d9ef">private</span> <span style="color: #f8f8f2">CPU</span> <span style="color: #f8f8f2">cpu;</span>
+    <span style="color: #66d9ef">private</span> <span style="color: #f8f8f2">PPU</span> <span style="color: #f8f8f2">ppu;</span>
 
-    private CPU cpu;
-    private PPU ppu;
+    <span style="color: #66d9ef">this</span><span style="color: #f8f8f2">(CPU</span> <span style="color: #f8f8f2">cpu,</span> <span style="color: #f8f8f2">PPU</span> <span style="color: #f8f8f2">ppu)</span> <span style="color: #f8f8f2">{</span>
+        <span style="color: #66d9ef">this</span><span style="color: #f8f8f2">.cpu</span> <span style="color: #f8f8f2">=</span> <span style="color: #f8f8f2">cpu;</span>
+        <span style="color: #66d9ef">this</span><span style="color: #f8f8f2">.ppu</span> <span style="color: #f8f8f2">=</span> <span style="color: #f8f8f2">ppu;</span>
+    <span style="color: #f8f8f2">}</span>
 
-    this(CPU cpu, PPU ppu) {
-        this.cpu = cpu;
-        this.ppu = ppu;
-    }
-
-    void run() {
-        while (true) {
-            this.cpu.call();
-            this.ppu.call();
-        }
-    }
-}
-</code></pre>
+    <span style="color: #66d9ef">void</span> <span style="color: #f8f8f2">run()</span> <span style="color: #f8f8f2">{</span>
+        <span style="color: #66d9ef">while</span> <span style="color: #f8f8f2">(</span><span style="color: #66d9ef">true</span><span style="color: #f8f8f2">)</span> <span style="color: #f8f8f2">{</span>
+            <span style="color: #66d9ef">this</span><span style="color: #f8f8f2">.cpu.call();</span>
+            <span style="color: #66d9ef">this</span><span style="color: #f8f8f2">.ppu.call();</span>
+        <span style="color: #f8f8f2">}</span>
+    <span style="color: #f8f8f2">}</span>
+<span style="color: #f8f8f2">}</span>
+</code></pre></div>
 
 <p>This is very neat and should help to write a clean and easy-to-understand emulator. It should be straightforward to extend this to other components such as the timer and the audio subsystem.</p>
 
