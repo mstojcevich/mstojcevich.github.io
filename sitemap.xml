@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <url>
+    <loc>https://mstojcevich.github.io/post/d-gb-emu-fibers/</loc>
+    <lastmod>2018-11-05T22:58:41-05:00</lastmod>
+  </url>
   
   <url>
     <loc>https://mstojcevich.github.io/post/d-gb-emu-registers/</loc>
@@ -7,14 +13,24 @@
   </url>
   
   <url>
+    <loc>https://mstojcevich.github.io/categories/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://mstojcevich.github.io/</loc>
-    <lastmod>2017-02-18T15:39:51-05:00</lastmod>
+    <lastmod>2018-11-05T22:58:41-05:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>https://mstojcevich.github.io/post/</loc>
-    <lastmod>2017-02-18T15:39:51-05:00</lastmod>
+    <lastmod>2018-11-05T22:58:41-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://mstojcevich.github.io/tags/</loc>
     <priority>0</priority>
   </url>
   

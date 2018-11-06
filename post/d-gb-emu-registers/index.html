@@ -1,51 +1,38 @@
-    <!DOCTYPE html>
-<html lang="en-us">
-	<head>
-		<meta charset="utf-8">
-		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<meta name="author" content="Marcus Stojcevich">
-		<meta name="description" content="A blog about programming and things">
-		<meta name="generator" content="Hugo 0.18.1" />
-		<title>Writing a Gameboy emulator in D: Part 1 - Registers &middot; Marcus&#39;s Blog</title>
-		<link rel="shortcut icon" href="https://mstojcevich.github.io/images/favicon.ico">
-		<link rel="stylesheet" href="https://mstojcevich.github.io/css/style.css">
-		<link rel="stylesheet" href="https://mstojcevich.github.io/css/highlight.css">
-		
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="Marcus Stojcevich">
+<meta name="description" content="A blog about programming and things">
+<meta name="generator" content="Hugo 0.50" />
+<title>Writing a Gameboy emulator in D: Part 1 - Registers</title>
+<link rel="shortcut icon" href="https://mstojcevich.github.io/images/favicon.ico">
+<link rel="stylesheet" href="https://mstojcevich.github.io/css/style.css">
+<link rel="stylesheet" href="https://mstojcevich.github.io/css/highlight.css">
 
-		
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css">
-		
 
-		
-		<link href="https://mstojcevich.github.io/index.xml" rel="alternate" type="application/rss+xml" title="Marcus&#39;s Blog" />
-		
 
-		<meta property="og:title" content="Writing a Gameboy emulator in D: Part 1 - Registers" />
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css">
+
+
+
+<link href="https://mstojcevich.github.io/index.xml" rel="alternate" type="application/rss+xml" title="Marcus&#39;s Blog" />
+
+
+<meta property="og:title" content="Writing a Gameboy emulator in D: Part 1 - Registers" />
 <meta property="og:description" content="About the Gameboy CPU The Gameboy uses a custom 8-bit Sharp LR35902 CPU (henceforth referred to as the &ldquo;Gameboy CPU&rdquo;), which uses a modified version of the Zilog Z80 instruction set, which itself is based on the Intel 8080.
 The registers of the Gameboy CPU are identical to those of the 8080. Each main register is 8 bits wide, though in many instructions the regsiters can be accessed as groups of two adjacent registers, and are then treated as 16-bit; for example, the register AF is a combination of A and F with the bits of A used as the most significant and F as least significant." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mstojcevich.github.io/post/d-gb-emu-registers/" />
-
-
-<meta property="og:updated_time" content="2017-02-18T15:39:51-05:00"/>
-
+<meta property="og:url" content="https://mstojcevich.github.io/post/d-gb-emu-registers/" /><meta property="article:published_time" content="2017-02-18T15:39:51-05:00"/>
+<meta property="article:modified_time" content="2017-02-18T15:39:51-05:00"/>
 
 
 
-
-
-
-
-
-
-	    
-	    
 <meta itemprop="name" content="Writing a Gameboy emulator in D: Part 1 - Registers">
 <meta itemprop="description" content="About the Gameboy CPU The Gameboy uses a custom 8-bit Sharp LR35902 CPU (henceforth referred to as the &ldquo;Gameboy CPU&rdquo;), which uses a modified version of the Zilog Z80 instruction set, which itself is based on the Intel 8080.
 The registers of the Gameboy CPU are identical to those of the 8080. Each main register is 8 bits wide, though in many instructions the regsiters can be accessed as groups of two adjacent registers, and are then treated as 16-bit; for example, the register AF is a combination of A and F with the bits of A used as the most significant and F as least significant.">
 
 
+<meta itemprop="datePublished" content="2017-02-18T15:39:51-05:00" />
 <meta itemprop="dateModified" content="2017-02-18T15:39:51-05:00" />
 <meta itemprop="wordCount" content="1169">
 
@@ -53,35 +40,25 @@ The registers of the Gameboy CPU are identical to those of the 8080. Each main r
 
 <meta itemprop="keywords" content="" />
 
-	    
-
-  <meta name="twitter:card" content="summary"/>
-
-
-
+<meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Writing a Gameboy emulator in D: Part 1 - Registers"/>
 <meta name="twitter:description" content="About the Gameboy CPU The Gameboy uses a custom 8-bit Sharp LR35902 CPU (henceforth referred to as the &ldquo;Gameboy CPU&rdquo;), which uses a modified version of the Zilog Z80 instruction set, which itself is based on the Intel 8080.
 The registers of the Gameboy CPU are identical to those of the 8080. Each main register is 8 bits wide, though in many instructions the regsiters can be accessed as groups of two adjacent registers, and are then treated as 16-bit; for example, the register AF is a combination of A and F with the bits of A used as the most significant and F as least significant."/>
 
 
-
-	</head>
-
     <body>
        <nav class="main-nav">
-	
 	
 		<a href='https://mstojcevich.github.io/'> <span class="arrow">←</span>Home</a>
 	
 
 	
-		<a href='https://mstojcevich.github.io/about'>About</a>
-	
 
 	
-	<a class="cta" href="https://mstojcevich.github.io/index.xml">Subscribe</a>
+		<a class="cta" href="https://mstojcevich.github.io/index.xml">Subscribe</a>
 	
 </nav>
+
 
         <section id="wrapper">
             <article class="post">
@@ -142,24 +119,22 @@ Because using unions for type punning is undefined behavior in C++ (it&rsquo;s a
 
 <p>To explain type punning using unions, I will use the following example:</p>
 
-<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #66d9ef">union</span> <span style="color: #f8f8f2">PunnedRegister</span> <span style="color: #f8f8f2">{</span>
-    <span style="color: #66d9ef">short</span> <span style="color: #f8f8f2">ab;</span> <span style="color: #75715e">// Grouped 8-bit values</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-D" data-lang="D">union PunnedRegister {
+    short ab; // Grouped 8-bit values
 
-    <span style="color: #66d9ef">struct</span> <span style="color: #f8f8f2">{</span> <span style="color: #75715e">// In order of least significant to most significant</span>
-        <span style="color: #66d9ef">byte</span> <span style="color: #f8f8f2">b;</span> <span style="color: #75715e">// Right value</span>
-        <span style="color: #66d9ef">byte</span> <span style="color: #f8f8f2">a;</span> <span style="color: #75715e">// Left value</span>
-    <span style="color: #f8f8f2">}</span>
-<span style="color: #f8f8f2">}</span>
+    struct { // In order of least significant to most significant
+        byte b; // Right value
+        byte a; // Left value
+    }
+}
 
-<span style="color: #66d9ef">void</span> <span style="color: #f8f8f2">main()</span> <span style="color: #f8f8f2">{</span>
-    <span style="color: #f8f8f2">PunnedRegister</span> <span style="color: #f8f8f2">r;</span>
+void main() {
+    PunnedRegister r;
 
-    <span style="color: #f8f8f2">r.a</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0xA</span><span style="color: #f8f8f2">;</span>
-    <span style="color: #f8f8f2">r.b</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0xB</span><span style="color: #f8f8f2">;</span>
-    <span style="color: #f8f8f2">writefln(</span><span style="color: #e6db74">&quot;%04X&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #f8f8f2">r.ab);</span>
-<span style="color: #f8f8f2">}</span>
-</pre></div>
-
+    r.a = 0xA;
+    r.b = 0xB;
+    writefln(&#34;%04X&#34;, r.ab);
+}</code></pre></div>
 
 <p>This code outputs <code>0A0B</code> as expected.</p>
 
@@ -170,34 +145,32 @@ When accessed as one of the two 8-bit integers, either the left or right half of
 
 <p>Using mixins to reduce the amount of repetitive code, this is how the registers will be represented in the emulator:</p>
 
-<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #66d9ef">alias</span> <span style="color: #f8f8f2">reg16</span> <span style="color: #f8f8f2">=</span> <span style="color: #66d9ef">short</span><span style="color: #f8f8f2">;</span>
-<span style="color: #66d9ef">alias</span> <span style="color: #f8f8f2">reg8</span> <span style="color: #f8f8f2">=</span> <span style="color: #66d9ef">byte</span><span style="color: #f8f8f2">;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-D" data-lang="D">alias reg16 = short;
+alias reg8 = byte;
 
-<span style="color: #66d9ef">template</span> <span style="color: #f8f8f2">Register(string</span> <span style="color: #f8f8f2">firstHalf,</span> <span style="color: #f8f8f2">string</span> <span style="color: #f8f8f2">secondHalf)</span> <span style="color: #f8f8f2">{</span>
-    <span style="color: #66d9ef">const</span> <span style="color: #66d9ef">char</span><span style="color: #f8f8f2">[]</span> <span style="color: #f8f8f2">Register</span> <span style="color: #f8f8f2">=</span> 
-    <span style="color: #e6db74">&quot;</span>
-<span style="color: #e6db74">    union {</span>
-<span style="color: #e6db74">        reg16 &quot;</span> <span style="color: #f8f8f2">~</span> <span style="color: #f8f8f2">firstHalf</span> <span style="color: #f8f8f2">~</span> <span style="color: #f8f8f2">secondHalf</span> <span style="color: #f8f8f2">~</span> <span style="color: #e6db74">&quot;;</span>
+template Register(string firstHalf, string secondHalf) {
+    const char[] Register = 
+    &#34;
+    union {
+        reg16 &#34; ~ firstHalf ~ secondHalf ~ &#34;;
 
-<span style="color: #e6db74">        struct {</span>
-<span style="color: #e6db74">            reg8 &quot;</span> <span style="color: #f8f8f2">~</span> <span style="color: #f8f8f2">secondHalf</span> <span style="color: #f8f8f2">~</span> <span style="color: #e6db74">&quot;;</span>
-<span style="color: #e6db74">            reg8 &quot;</span> <span style="color: #f8f8f2">~</span> <span style="color: #f8f8f2">firstHalf</span> <span style="color: #f8f8f2">~</span><span style="color: #e6db74">&quot;;</span>
-<span style="color: #e6db74">        }</span>
-<span style="color: #e6db74">    }</span>
-<span style="color: #e6db74">    &quot;</span><span style="color: #f8f8f2">;</span>
-<span style="color: #f8f8f2">}</span>
+        struct {
+            reg8 &#34; ~ secondHalf ~ &#34;;
+            reg8 &#34; ~ firstHalf ~&#34;;
+        }
+    }
+    &#34;;
+}
 
-<span style="color: #66d9ef">struct</span> <span style="color: #f8f8f2">Registers</span> <span style="color: #f8f8f2">{</span>
-    <span style="color: #66d9ef">mixin</span><span style="color: #f8f8f2">(Register!(</span><span style="color: #e6db74">&quot;a&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;f&quot;</span><span style="color: #f8f8f2">));</span>
-    <span style="color: #66d9ef">mixin</span><span style="color: #f8f8f2">(Register!(</span><span style="color: #e6db74">&quot;b&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;c&quot;</span><span style="color: #f8f8f2">));</span>
-    <span style="color: #66d9ef">mixin</span><span style="color: #f8f8f2">(Register!(</span><span style="color: #e6db74">&quot;d&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;e&quot;</span><span style="color: #f8f8f2">));</span>
-    <span style="color: #66d9ef">mixin</span><span style="color: #f8f8f2">(Register!(</span><span style="color: #e6db74">&quot;h&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;l&quot;</span><span style="color: #f8f8f2">));</span>
+struct Registers {
+    mixin(Register!(&#34;a&#34;, &#34;f&#34;));
+    mixin(Register!(&#34;b&#34;, &#34;c&#34;));
+    mixin(Register!(&#34;d&#34;, &#34;e&#34;));
+    mixin(Register!(&#34;h&#34;, &#34;l&#34;));
 
-    <span style="color: #f8f8f2">reg16</span> <span style="color: #f8f8f2">sp;</span>
-    <span style="color: #f8f8f2">reg16</span> <span style="color: #f8f8f2">pc;</span>
-<span style="color: #f8f8f2">}</span>
-</pre></div>
-
+    reg16 sp;
+    reg16 pc;
+}</code></pre></div>
 
 <p>I also aliased short to reg16 and byte to reg8 in case I find it important to make them unsigned in the future or alter how they are stored in some other way. Unlike C/C++, it isn&rsquo;t necessary to change the alias on different platforms since type size is <a href="https://dlang.org/spec/type.html">guarenteed</a>.</p>
 
@@ -252,15 +225,13 @@ When accessed as one of the two 8-bit integers, either the left or right half of
 
 <p>While most games probably don&rsquo;t care about what the initial values of the registers are, I wanted to implement the values anyway for completion sake.
 I set these values after declaring the registers:
-<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #75715e">// Initialize like the original bootstrap rom</span>
-<span style="color: #f8f8f2">regs.sp</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0xFFFE</span><span style="color: #f8f8f2">;</span>
-<span style="color: #f8f8f2">regs.af</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0x01B0</span><span style="color: #f8f8f2">;</span>
-<span style="color: #f8f8f2">regs.bc</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0x0013</span><span style="color: #f8f8f2">;</span>
-<span style="color: #f8f8f2">regs.de</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0x00D8</span><span style="color: #f8f8f2">;</span>
-<span style="color: #f8f8f2">regs.hl</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0x014D</span><span style="color: #f8f8f2">;</span>
-<span style="color: #f8f8f2">regs.pc</span> <span style="color: #f8f8f2">=</span> <span style="color: #ae81ff">0x0100</span><span style="color: #f8f8f2">;</span>
-</pre></div>
-</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-D" data-lang="D">// Initialize like the original bootstrap rom
+regs.sp = 0xFFFE;
+regs.af = 0x01B0;
+regs.bc = 0x0013;
+regs.de = 0x00D8;
+regs.hl = 0x014D;
+regs.pc = 0x0100;</code></pre></div></p>
 
 <p>I&rsquo;ll look into the effects of the bootstrap rom on memory later.</p>
 
@@ -288,12 +259,10 @@ I set these values after declaring the registers:
     
     
     
-        
         <li>
-            <a href="https://mstojcevich.github.io/post/d-gb-emu-registers/">Writing a Gameboy emulator in D: Part 1 - Registers<aside class="dates">Feb 18</aside></a>
+            <a href="/post/d-gb-emu-fibers/">Using D fibers to implement the Gameboy&#39;s timing<aside class="dates">Nov 5 2018</aside></a>
         </li>
-        
-   
+    
 </ul>
 
             <footer id="footer">
@@ -313,7 +282,7 @@ I set these values after declaring the registers:
     
     <p class="small">
     
-        © Copyright 2017 Marcus Stojcevich
+        © Copyright 2018 Marcus Stojcevich
     
     </p>
 </footer>
